@@ -1,13 +1,4 @@
 """
-=============================================================================
- TRIPLE INVERTED PENDULUM ON A CART - LQR STABILIZATION
-=============================================================================
-A cart (mass M) slides without friction... well, WITH a bit of viscous
-friction if you want, along the x-axis. A chain of three pendulums
-(masses m1, m2, m3, rod lengths l1, l2, l3) is hinged on the cart. The ONLY
-actuator is a horizontal force u applied to the cart. The goal is to keep
-all three pendulums balanced upright (theta_i = 0) using a linear state
-feedback law
 
         u = -K (z - z_eq)      with     z = [x, th1, th2, th3, xd, th1d, th2d, th3d]^T
 
@@ -81,7 +72,7 @@ R_LQR = np.array([[0.02]])           # control-effort penalty (smaller -> faster
 # the peak force the gain K actually demands for your chosen initial
 # condition / disturbance (the script prints a warning if it saturates for
 # more than a brief instant).
-U_MAX = 0.0          # [N]
+U_MAX = 650.0          # [N]
 
 # Initial condition: small angular offsets from upright (radians), everything else at rest
 INITIAL_STATE = np.array([0.0,               # x

@@ -1,28 +1,3 @@
-"""
-=============================================================================
- ANIMATION GENERATOR - Triple Inverted Pendulum on a Cart
-=============================================================================
-This script does NOT redefine the physics or the controller. It simply:
-
-  1. imports derive.py            -> symbolic equations of motion
-  2. imports triple_pendulum_lqr.py -> nonlinear model, linearization, LQR
-  3. runs BOTH simulations:
-        - controlled   (u = -K (z - z_eq), the LQR from triple_pendulum_lqr.py)
-        - uncontrolled (u = 0, free fall, for comparison)
-  4. builds animation(s) purely from those simulation results:
-        - pendulum_controlled_animation.gif
-        - pendulum_uncontrolled_animation.gif
-        - pendulum_comparison_animation.gif   (side-by-side, synced in time)
-
-Run it with:
-    python3 animate_pendulum.py
-
-It must sit in the same folder as derive.py and triple_pendulum_lqr.py.
-Edit masses/lengths/initial tilt/disturbance/LQR weights in
-triple_pendulum_lqr.py (PARAMS, INITIAL_STATE, Q_LQR, R_LQR, etc.) -- this
-script will automatically pick up those changes since it imports them.
-=============================================================================
-"""
 
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -37,10 +12,6 @@ import triple_pendulum_lqr as tp   # runs derive.py internally via build_model()
 OUTDIR = tp.OUTDIR   # same "outputs" folder next to the scripts (auto-created)
 
 
-# =============================================================================
-# 1. Re-run the two simulations (controlled and uncontrolled) from the model
-#    and parameters defined in triple_pendulum_lqr.py
-# =============================================================================
 def run_simulations():
     print("Building symbolic model and lambdified dynamics ...")
     M_func, F_func = tp.build_model(print_equations=False)

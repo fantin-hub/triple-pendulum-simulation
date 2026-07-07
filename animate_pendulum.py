@@ -10,7 +10,7 @@ import os
 # --- this is what "runs the other files" -----------------------------------
 import triple_pendulum_lqr as tp   # runs derive.py internally via build_model()
 OUTDIR = tp.OUTDIR   # same "outputs" folder next to the scripts (auto-created)
-
+ 
 
 def run_simulations():
     print("Building symbolic model and lambdified dynamics ...")

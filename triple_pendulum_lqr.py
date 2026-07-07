@@ -1,23 +1,3 @@
-"""
-
-        u = -K (z - z_eq)      with     z = [x, th1, th2, th3, xd, th1d, th2d, th3d]^T
-
-where K is computed by solving the continuous-time LQR problem for the
-system linearized about the (unstable) upright equilibrium.
-
-Everything a user typically wants to change lives in the PARAMETERS block
-below: masses, lengths, LQR weights, actuator saturation and an external
-disturbance force (a "kick" or a sustained push) applied to the cart.
-
-Sections:
-  1. Symbolic model  (derive.py)              -> mass matrix M(q), forcing F
-  2. Numeric nonlinear dynamics                -> qddot = M(q)^-1 F(q,qdot,u,Fd)
-  3. Linearization about the upright position  -> A, B  (finite differences)
-  4. LQR gain                                  -> K = R^-1 B^T P
-  5. Closed-loop nonlinear simulation          -> scipy.integrate.solve_ivp
-  6. Plots: cart position, angles, control effort, and an animation (gif)
-=============================================================================
-"""
 
 import numpy as np
 import sympy as sp
@@ -29,24 +9,23 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
 
-from derive import derive
+from modelling import derive
 
 # Output files are written next to this script, in an "outputs" folder that
 # is created automatically if it doesn't exist yet.
 OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
 os.makedirs(OUTDIR, exist_ok=True)
 
-# =============================================================================
-# 1. PARAMETERS  -- edit these to explore different physical configurations
-# =============================================================================
+
+# PARAMETERS  
 PARAMS = dict(
     M=2.0,     # cart mass                 [kg]
     m1=0.3,    # pendulum-1 (bottom) mass  [kg]
-    m2=0.2,    # pendulum-2 (middle) mass  [kg]
-    m3=0.1,    # pendulum-3 (top) mass     [kg]
+    m2=0.3,    # pendulum-2 (middle) mass  [kg]
+    m3=0.3,    # pendulum-3 (top) mass     [kg]
     l1=0.5,    # pendulum-1 length         [m]
-    l2=0.4,    # pendulum-2 length         [m]
-    l3=0.3,    # pendulum-3 length         [m]
+    l2=0.5,    # pendulum-2 length         [m]
+    l3=0.5,    # pendulum-3 length         [m]
     g=9.81,    # gravitational acceleration [m/s^2]
     b0=0.5,    # cart viscous friction      [N.s/m]
     b1=0.02,   # joint-1 viscous friction   [N.m.s]
@@ -54,25 +33,13 @@ PARAMS = dict(
     b3=0.02,   # joint-3 viscous friction   [N.m.s]
 )
 
-# LQR weights: state = [x, th1, th2, th3, xd, th1d, th2d, th3d]
-# NOTE ON TUNING A TRIPLE INVERTED PENDULUM: the open-loop upright equilibrium
-# is *very* unstable (growth rate of several rad/s for these dimensions), so
-# even a well-designed LQR needs a large, fast corrective force during the
-# first ~0.3-0.5 s -- a few hundred Newtons is normal for this benchmark, not
-# a sign of a bad design. If U_MAX is set too low, the controller saturates
-# for too long, the state leaves the region where the linearization is valid,
-# and the pendulums can fall over instead of recovering (this is exactly what
-# was happening in the first version of this script -- always sanity check
-# your U_MAX against the peak force the closed loop actually demands, e.g.
-# with the linear model: u(t) = -K @ expm((A-B@K)*t) @ z0).
+
 Q_LQR = np.diag([2.0, 150.0, 300.0, 450.0, 1.0, 80.0, 150.0, 220.0])
 R_LQR = np.array([[0.02]])           # control-effort penalty (smaller -> faster, more aggressive control)
 
-# Actuator saturation (set to None to disable). Keep this comfortably above
-# the peak force the gain K actually demands for your chosen initial
-# condition / disturbance (the script prints a warning if it saturates for
-# more than a brief instant).
-U_MAX = 650.0          # [N]
+U_MAX = 650.0          # [N] => Acuator saturation
+
+
 
 # Initial condition: small angular offsets from upright (radians), everything else at rest
 INITIAL_STATE = np.array([0.0,               # x
@@ -90,9 +57,8 @@ T_FINAL = 8.0            # simulation duration [s]
 N_POINTS = 1600          # number of time samples for plotting/animation
 
 
-# =============================================================================
-# 2. BUILD THE NUMERIC NONLINEAR MODEL FROM THE SYMBOLIC DERIVATION
-# =============================================================================
+
+# NUMERIC NONLINEAR MODEL 
 def build_model(print_equations=True):
     eqs, A_mat, b_vec, s = derive()
 
@@ -148,9 +114,8 @@ def make_dynamics(M_func, F_func, params):
     return f
 
 
-# =============================================================================
-# 3. LINEARIZATION ABOUT THE UPRIGHT EQUILIBRIUM (central finite differences)
-# =============================================================================
+
+# LINEARIZATION ABOUT THE UPRIGHT EQUILIBRIUM (central finite differences)
 def linearize(f, z_eq, u_eq=0.0, eps=1e-6):
     n = len(z_eq)
     A = np.zeros((n, n))
@@ -168,18 +133,15 @@ def lqr(A, B, Qw, Rw):
     return K, P
 
 
-# =============================================================================
-# 4. DISTURBANCE FORCE PROFILE
-# =============================================================================
+
+# DISTURBANCE FORCE PROFILE
 def disturbance(t, magnitude=DIST_MAGNITUDE, start=DIST_START, duration=DIST_DURATION):
     if magnitude != 0.0 and start <= t <= start + duration:
         return magnitude
     return 0.0
 
 
-# =============================================================================
-# 5. SIMULATION
-# =============================================================================
+#  SIMULATION
 def simulate(f, K, z_eq, u_max=U_MAX):
     def controller(z):
         u = float((-K @ (z - z_eq)).item())
@@ -212,9 +174,8 @@ def simulate(f, K, z_eq, u_max=U_MAX):
     return sol, controller
 
 
-# =============================================================================
-# 6. PLOTS
-# =============================================================================
+
+# PLOTS
 def plot_results(sol, params, controller):
     t = sol.t
     x, th1, th2, th3 = sol.y[0], sol.y[1], sol.y[2], sol.y[3]
@@ -348,20 +309,11 @@ def main():
     print("\nLQR gain matrix K:")
     print(np.round(K, 3))
 
-    print("\nClosed-loop eigenvalues (A - B K):")
-    print(np.round(np.linalg.eigvals(A - B @ K), 3))
 
     sol, controller = simulate(f, K, z_eq)
 
-    if not sol.success:
-        print("\n*** Integration did not fully succeed:", sol.message)
-
     plot_results(sol, PARAMS, controller)
     animate_cart(sol, PARAMS)
-
-    print("\nDone. Plots written to:")
-    print(f"  {os.path.join(OUTDIR, 'pendulum_timeseries.png')}")
-    print(f"  {os.path.join(OUTDIR, 'pendulum_animation.gif')}")
 
 
 if __name__ == "__main__":

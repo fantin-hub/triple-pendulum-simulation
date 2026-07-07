@@ -27,7 +27,7 @@ def derive():
     g = sp.symbols('g', positive=True)
     M, m1, m2, m3 = sp.symbols('M m1 m2 m3', positive=True)
     l1, l2, l3 = sp.symbols('l1 l2 l3', positive=True)
-    b0, b1, b2, b3 = sp.symbols('b0 b1 b2 b3', nonnegative=True)
+    b0, b1, b2, b3 = sp.symbols('b0 b1 b2 b3', positive=True)
 
     x = sp.Function('x')(t)
     th1 = sp.Function('theta1')(t)
@@ -38,7 +38,7 @@ def derive():
 
     xdot, th1dot, th2dot, th3dot = (sp.diff(q, t) for q in (x, th1, th2, th3))
 
-    # --- Cartesian positions of the three point masses -------------------
+    # Cartesian positions of the three point masses
     x1 = x + l1 * sp.sin(th1)
     y1 = l1 * sp.cos(th1)
     x2 = x1 + l2 * sp.sin(th2)
@@ -46,25 +46,24 @@ def derive():
     x3 = x2 + l3 * sp.sin(th3)
     y3 = y2 + l3 * sp.cos(th3)
 
-    def vel(expr):
-        return sp.diff(expr, t)
 
-    x1d, y1d = vel(x1), vel(y1)
-    x2d, y2d = vel(x2), vel(y2)
-    x3d, y3d = vel(x3), vel(y3)
+    x1d, y1d = sp.diff(x1, t), sp.diff(y1, t)
+    x2d, y2d = sp.diff(x2, t), sp.diff(y2, t)
+    x3d, y3d = sp.diff(x3, t), sp.diff(y3, t)
 
-    # --- Kinetic / potential energy ---------------------------------------
-    T = (sp.Rational(1, 2) * M * xdot**2
+    # Kinetic / potential energy 
+    T = (sp.Rational(1, 2) * M * xdot**2                                                # Review : sp.Rational(1, 2) => 1/2
          + sp.Rational(1, 2) * m1 * (x1d**2 + y1d**2)
-         + sp.Rational(1, 2) * m2 * (x2d**2 + y2d**2)
+         + sp.Rational(1, 2) * m2 * (x2d**2 + y2d**2 )
          + sp.Rational(1, 2) * m3 * (x3d**2 + y3d**2))
 
     V = m1 * g * y1 + m2 * g * y2 + m3 * g * y3
 
-    L = sp.expand_trig(sp.simplify(T - V))
+    L = sp.expand_trig(sp.simplify(T - V))                                              # Review 
 
     qs = [x, th1, th2, th3]
     qdots = [xdot, th1dot, th2dot, th3dot]
+
     # generalized forces: control + disturbance act on the cart DOF only,
     # each DOF also has a (small) linear viscous damping term
     Q = [u + Fd - b0 * xdot, -b1 * th1dot, -b2 * th2dot, -b3 * th3dot]
@@ -76,7 +75,7 @@ def derive():
         dL_dq = sp.diff(L, qi)
         eqs.append(sp.Eq(ddt - dL_dq, Qi))
 
-    # --- Replace time-functions/derivatives with plain algebraic symbols --
+    # Replace time-functions/derivatives with plain algebraic symbols
     xs, th1s, th2s, th3s = sp.symbols('x theta1 theta2 theta3')
     xds, th1ds, th2ds, th3ds = sp.symbols('xdot theta1dot theta2dot theta3dot')
     xdds, th1dds, th2dds, th3dds = sp.symbols('xddot theta1ddot theta2ddot theta3ddot')
